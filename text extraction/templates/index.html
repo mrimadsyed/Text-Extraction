@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Text Extractor</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        #headingContainer {
+            background-color: lightblue;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        #buttonContainer {
+            margin-top: 10px;
+        }
+        #buttonContainer button {
+            margin: 5px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #buttonContainer button:hover {
+            background-color: #45a049;
+        }
+        #imageContainer {
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            padding: 10px;
+            background-color: #fff;
+        }
+        #extractedText {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+        }
+        #copyTextButton {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="headingContainer">
+        <h1>Image Text Extractor</h1>
+    </div>
+    <input type="file" id="imageInput" accept="image/*" style="display: none;">
+    <button id="selectImageButton">Select Image</button>
+    <br>
+    <div id="imageContainer" style="display: none;">
+        <img id="image" src="" alt="Upload an image">
+    </div>
+    <div id="buttonContainer" style="display: none;">
+        <button id="startCropButton">Start Crop</button>
+        <button id="extractTextButton" style="display: none;">Extract Text</button>
+        <button id="resetButton">Reset</button>
+        <button id="resetTextButton" style="display: none;">Reset Text</button>
+    </div>
+    <br>
+    <div id="extractedText" style="display: none;">
+        <h2>Extracted Text:</h2>
+        <p id="extractedTextContent"></p>
+        <button id="copyTextButton">Copy Text</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script>
+        document.getElementById('selectImageButton').onclick = function() {
+            document.getElementById('imageInput').click();
+        };
+
+        document.getElementById('imageInput').onchange = function(event) {
+            var reader = new FileReader();
+            reader.onload = function(event) {
+                var image = document.getElementById('image');
+                image.src = event.target.result;
+                document.getElementById('imageContainer').style.display = 'block';
+                document.getElementById('buttonContainer').style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        };
+
+        document.getElementById('startCropButton').onclick = function() {
+            var image = document.getElementById('image');
+            var cropper = new Cropper(image, {
+                aspectRatio: NaN,
+                viewMode: 2,
+                crop: function(event) {
+                    var croppedCanvas = cropper.getCroppedCanvas();
+                    var croppedImage = croppedCanvas.toDataURL();
+                    document.getElementById('extractTextButton').style.display = 'block';
+                    document.getElementById('extractTextButton').setAttribute('data-cropped-image', croppedImage);
+                }
+            });
+        };
+
+        document.getElementById('extractTextButton').onclick = function() {
+            var croppedImage = document.getElementById('extractTextButton').getAttribute('data-cropped-image');
+            extractTextFromImage(croppedImage);
+        };
+
+        function extractTextFromImage(imageData) {
+            fetch('/', {
+                method: 'POST',
+                body: JSON.stringify({imageData: imageData}),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.text())
+              .then(text => {
+                  document.getElementById('extractedTextContent').innerText = text;
+                  document.getElementById('extractedText').style.display = 'block';
+                  document.getElementById('resetTextButton').style.display = 'block';
+              });
+        }
+
+        document.getElementById('copyTextButton').onclick = function() {
+            var textElement = document.getElementById('extractedTextContent');
+            var range = document.createRange();
+            range.selectNode(textElement);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+            alert('Text copied to clipboard');
+        };
+
+        document.getElementById('resetTextButton').onclick = function() {
+            document.getElementById('extractedTextContent').innerText = '';
+            document.getElementById('extractedText').style.display = 'none';
+            document.getElementById('resetTextButton').style.display = 'none';
+        };
+
+        document.getElementById('resetButton').onclick = function() {
+            document.getElementById('imageInput').value = '';
+            document.getElementById('imageContainer').style.display = 'none';
+            document.getElementById('buttonContainer').style.display = 'none';
+            document.getElementById('extractTextButton').style.display = 'none';
+            document.getElementById('extractedText').style.display = 'none';
+            document.getElementById('resetTextButton').style.display = 'none';
+            document.getElementById('extractedTextContent').innerText = '';
+        };
+    </script>
+</body>
+</html>
